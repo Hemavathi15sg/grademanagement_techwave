@@ -1,0 +1,14 @@
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test output
+*.out
+
+# Editor/project files
+.vscode/
+.idea/
+*.swp
