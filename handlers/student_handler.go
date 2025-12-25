@@ -4,14 +4,21 @@ import (
     "encoding/json"
     "net/http"
     "strconv"
+    "sync"
     "techwave/models"
-    "techwave/repository"
 
     "github.com/gorilla/mux"
 )
 
+// Global in-memory storage - MESSY! Mixed with HTTP logic
+var (
+    students   = make(map[int]models.Student)
+    studentsMu sync.RWMutex
+    nextStudentID = 1
+)
+
 type StudentHandler struct {
-    Repo *repository.StudentRepository
+    // No repository - direct data access
 }
 
 func (h *StudentHandler) CreateStudent(w http.ResponseWriter, r *http.Request) {
@@ -20,9 +27,16 @@ func (h *StudentHandler) CreateStudent(w http.ResponseWriter, r *http.Request) {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
-    created := h.Repo.Create(student)
+    
+    // Direct database logic mixed with HTTP handler - BAD!
+    studentsMu.Lock()
+    student.ID = nextStudentID
+    nextStudentID++
+    students[student.ID] = student
+    studentsMu.Unlock()
+    
     w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(created)
+    json.NewEncoder(w).Encode(student)
 }
 
 func (h *StudentHandler) GetStudent(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +46,12 @@ func (h *StudentHandler) GetStudent(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Invalid ID", http.StatusBadRequest)
         return
     }
-    student, ok := h.Repo.Get(id)
+    
+    // Direct data access in handler - BAD!
+    studentsMu.RLock()
+    student, ok := students[id]
+    studentsMu.RUnlock()
+    
     if !ok {
         http.Error(w, "Student not found", http.StatusNotFound)
         return
@@ -41,8 +60,15 @@ func (h *StudentHandler) GetStudent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *StudentHandler) ListStudents(w http.ResponseWriter, r *http.Request) {
-    students := h.Repo.List()
-    json.NewEncoder(w).Encode(students)
+    // Direct data access in handler - BAD!
+    studentsMu.RLock()
+    list := make([]models.Student, 0, len(students))
+    for _, s := range students {
+        list = append(list, s)
+    }
+    studentsMu.RUnlock()
+    
+    json.NewEncoder(w).Encode(list)
 }
 
 func (h *StudentHandler) UpdateStudent(w http.ResponseWriter, r *http.Request) {
@@ -57,12 +83,20 @@ func (h *StudentHandler) UpdateStudent(w http.ResponseWriter, r *http.Request) {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
-    updated, ok := h.Repo.Update(id, student)
+    
+    // Direct data access in handler - BAD!
+    studentsMu.Lock()
+    _, ok := students[id]
     if !ok {
+        studentsMu.Unlock()
         http.Error(w, "Student not found", http.StatusNotFound)
         return
     }
-    json.NewEncoder(w).Encode(updated)
+    student.ID = id
+    students[id] = student
+    studentsMu.Unlock()
+    
+    json.NewEncoder(w).Encode(student)
 }
 
 func (h *StudentHandler) DeleteStudent(w http.ResponseWriter, r *http.Request) {
@@ -72,10 +106,17 @@ func (h *StudentHandler) DeleteStudent(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Invalid ID", http.StatusBadRequest)
         return
     }
-    ok := h.Repo.Delete(id)
+    
+    // Direct data access in handler - BAD!
+    studentsMu.Lock()
+    _, ok := students[id]
     if !ok {
+        studentsMu.Unlock()
         http.Error(w, "Student not found", http.StatusNotFound)
         return
     }
+    delete(students, id)
+    studentsMu.Unlock()
+    
     w.WriteHeader(http.StatusNoContent)
 }
