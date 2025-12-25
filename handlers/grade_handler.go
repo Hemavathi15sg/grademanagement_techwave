@@ -12,8 +12,8 @@ import (
 
 // Global in-memory storage - MESSY! Mixed with HTTP logic
 var (
-	grades   = make(map[int]models.Grade)
-	gradesMu sync.RWMutex
+	grades      = make(map[int]models.Grade)
+	gradesMu    sync.RWMutex
 	nextGradeID = 1
 )
 
@@ -27,14 +27,14 @@ func (h *GradeHandler) CreateGrade(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	// Direct database logic mixed with HTTP handler - BAD!
 	gradesMu.Lock()
 	grade.ID = nextGradeID
 	nextGradeID++
 	grades[grade.ID] = grade
 	gradesMu.Unlock()
-	
+
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(grade)
 }
@@ -51,7 +51,7 @@ func (h *GradeHandler) GetGrade(w http.ResponseWriter, r *http.Request) {
 	gradesMu.RLock()
 	grade, ok := grades[id]
 	gradesMu.RUnlock()
-	
+
 	if !ok {
 		http.Error(w, "Grade not found", http.StatusNotFound)
 		return
@@ -68,7 +68,7 @@ func (h *GradeHandler) ListGrades(w http.ResponseWriter, r *http.Request) {
 		list = append(list, g)
 	}
 	gradesMu.RUnlock()
-	
+
 	json.NewEncoder(w).Encode(list)
 }
 
@@ -84,7 +84,7 @@ func (h *GradeHandler) UpdateGrade(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	// Direct data access in handler - BAD!
 	gradesMu.Lock()
 	_, ok := grades[id]
@@ -107,7 +107,7 @@ func (h *GradeHandler) DeleteGrade(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Direct data access in handler - BAD!
 	gradesMu.Lock()
 	_, ok := grades[id]
