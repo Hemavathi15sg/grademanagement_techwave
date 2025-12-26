@@ -2,11 +2,12 @@ package routes
 
 import (
     "github.com/gorilla/mux"
+    "github.com/go-redis/redis/v8"
     "techwave/handlers"
     "techwave/repository"
 )
 
-func RegisterRoutes(r *mux.Router) {
+func RegisterRoutes(r *mux.Router, redisClient *redis.Client) {
     studentRepo := repository.NewStudentRepository()
     studentHandler := &handlers.StudentHandler{Repo: studentRepo}
 
@@ -24,4 +25,18 @@ func RegisterRoutes(r *mux.Router) {
     r.HandleFunc("/grades/{id}", gradeHandler.GetGrade).Methods("GET")
     r.HandleFunc("/grades/{id}", gradeHandler.UpdateGrade).Methods("PUT")
     r.HandleFunc("/grades/{id}", gradeHandler.DeleteGrade).Methods("DELETE")
+
+    // Enrollment routes with Redis-backed repository
+    enrollmentRepo := repository.NewEnrollmentRepository(redisClient)
+    enrollmentHandler := &handlers.EnrollmentHandler{Repo: enrollmentRepo}
+
+    // Use /api prefix for enrollment routes as specified in requirements
+    apiRouter := r.PathPrefix("/api").Subrouter()
+    
+    apiRouter.HandleFunc("/enrollments", enrollmentHandler.CreateEnrollment).Methods("POST")
+    apiRouter.HandleFunc("/enrollments", enrollmentHandler.GetAllEnrollments).Methods("GET")
+    apiRouter.HandleFunc("/enrollments/stats", enrollmentHandler.GetEnrollmentStats).Methods("GET")
+    apiRouter.HandleFunc("/enrollments/{id}", enrollmentHandler.GetEnrollment).Methods("GET")
+    apiRouter.HandleFunc("/enrollments/{id}", enrollmentHandler.UpdateEnrollment).Methods("PUT")
+    apiRouter.HandleFunc("/enrollments/{id}", enrollmentHandler.DeleteEnrollment).Methods("DELETE")
 }
