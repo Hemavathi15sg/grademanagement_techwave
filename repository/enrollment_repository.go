@@ -176,13 +176,10 @@ func (r *EnrollmentRepository) Update(id string, updates *models.Enrollment) (*m
 		existing.Status = updates.Status
 	}
 	
-	// Update fields if provided
-	if updates.StudentID != "" {
-		existing.StudentID = updates.StudentID
-	}
-	if updates.CourseID != "" {
-		existing.CourseID = updates.CourseID
-	}
+	// Note: StudentID and CourseID cannot be updated to maintain index consistency
+	// If these need to change, the enrollment should be deleted and recreated
+	
+	// Update enrollment date if provided
 	if !updates.EnrollmentDate.IsZero() {
 		existing.EnrollmentDate = updates.EnrollmentDate
 	}
@@ -279,21 +276,44 @@ func (r *EnrollmentRepository) GetEnrollmentStats() (*EnrollmentStats, error) {
 }
 
 // getEnrollmentsByIDs is a helper to retrieve multiple enrollments by their IDs
+// Uses Redis MGET for efficient batch retrieval instead of N separate GET operations
 func (r *EnrollmentRepository) getEnrollmentsByIDs(ids []string) ([]*models.Enrollment, error) {
 	if len(ids) == 0 {
 		return []*models.Enrollment{}, nil
 	}
 	
+	// Build keys for MGET
+	keys := make([]string, len(ids))
+	for i, id := range ids {
+		keys[i] = fmt.Sprintf("enrollment:%s", id)
+	}
+	
+	// Use MGET to retrieve all enrollments in a single operation
+	values, err := r.client.MGet(r.ctx, keys...).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get enrollments: %w", err)
+	}
+	
 	enrollments := make([]*models.Enrollment, 0, len(ids))
 	
-	for _, id := range ids {
-		enrollment, err := r.GetByID(id)
-		if err != nil {
-			return nil, err
+	for _, val := range values {
+		if val == nil {
+			// Enrollment was deleted or doesn't exist, skip it
+			continue
 		}
-		if enrollment != nil {
-			enrollments = append(enrollments, enrollment)
+		
+		// Type assert to string
+		data, ok := val.(string)
+		if !ok {
+			continue
 		}
+		
+		var enrollment models.Enrollment
+		if err := enrollment.FromJSON([]byte(data)); err != nil {
+			// Skip malformed data but don't fail entire operation
+			continue
+		}
+		enrollments = append(enrollments, &enrollment)
 	}
 	
 	return enrollments, nil
