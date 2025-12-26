@@ -10,32 +10,14 @@ import (
 	"techwave/models"
 	"techwave/repository"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 )
 
-// getTestRedisClient returns a Redis client configured for testing
-// Uses database 15 to avoid conflicts with production data
-func getTestRedisClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-		DB:   15, // Use a separate DB for testing
-	})
-}
-
-// cleanupTestRedis clears all data from the test Redis database
-func cleanupTestRedis(client *redis.Client) {
-	client.FlushDB(client.Context())
-}
-
 func TestCreateEnrollment(t *testing.T) {
-	client := getTestRedisClient()
-	defer cleanupTestRedis(client)
-	
-	repo := repository.NewEnrollmentRepository(client)
+	repo := repository.NewEnrollmentRepository()
 	handler := &handlers.EnrollmentHandler{Repo: repo}
 
-	enrollment := `{"student_id":"student-123","course_id":"course-456","status":"pending"}`
+	enrollment := `{"student_id":123,"course_id":456,"status":"pending"}`
 	req := httptest.NewRequest("POST", "/api/enrollments", strings.NewReader(enrollment))
 	w := httptest.NewRecorder()
 
@@ -50,26 +32,23 @@ func TestCreateEnrollment(t *testing.T) {
 	if err := json.NewDecoder(res.Body).Decode(&e); err != nil {
 		t.Fatal(err)
 	}
-	if e.StudentID != "student-123" {
-		t.Errorf("expected student_id student-123, got %s", e.StudentID)
+	if e.StudentID != 123 {
+		t.Errorf("expected student_id 123, got %d", e.StudentID)
 	}
 	if e.Status != models.StatusPending {
 		t.Errorf("expected status pending, got %s", e.Status)
 	}
-	if e.ID == "" {
+	if e.ID == 0 {
 		t.Error("expected ID to be generated")
 	}
 }
 
 func TestCreateEnrollmentValidation(t *testing.T) {
-	client := getTestRedisClient()
-	defer cleanupTestRedis(client)
-	
-	repo := repository.NewEnrollmentRepository(client)
+	repo := repository.NewEnrollmentRepository()
 	handler := &handlers.EnrollmentHandler{Repo: repo}
 
 	// Test missing student_id
-	enrollment := `{"course_id":"course-456","status":"pending"}`
+	enrollment := `{"course_id":456,"status":"pending"}`
 	req := httptest.NewRequest("POST", "/api/enrollments", strings.NewReader(enrollment))
 	w := httptest.NewRecorder()
 
@@ -81,7 +60,7 @@ func TestCreateEnrollmentValidation(t *testing.T) {
 	}
 
 	// Test invalid status
-	enrollment = `{"student_id":"student-123","course_id":"course-456","status":"invalid"}`
+	enrollment = `{"student_id":123,"course_id":456,"status":"invalid"}`
 	req = httptest.NewRequest("POST", "/api/enrollments", strings.NewReader(enrollment))
 	w = httptest.NewRecorder()
 
@@ -94,26 +73,23 @@ func TestCreateEnrollmentValidation(t *testing.T) {
 }
 
 func TestGetEnrollment(t *testing.T) {
-	client := getTestRedisClient()
-	defer cleanupTestRedis(client)
-	
-	repo := repository.NewEnrollmentRepository(client)
+	repo := repository.NewEnrollmentRepository()
 	handler := &handlers.EnrollmentHandler{Repo: repo}
 
 	// Create an enrollment first
 	enrollment := models.Enrollment{
-		StudentID: "student-123",
-		CourseID:  "course-456",
+		StudentID: 123,
+		CourseID:  456,
 		Status:    models.StatusActive,
 	}
-	created, err := repo.Create(&enrollment)
+	created, err := repo.Create(enrollment)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Get the enrollment
-	req := httptest.NewRequest("GET", "/api/enrollments/"+created.ID, nil)
-	req = mux.SetURLVars(req, map[string]string{"id": created.ID})
+	req := httptest.NewRequest("GET", "/api/enrollments/1", nil)
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	w := httptest.NewRecorder()
 
 	handler.GetEnrollment(w, req)
@@ -128,19 +104,16 @@ func TestGetEnrollment(t *testing.T) {
 		t.Fatal(err)
 	}
 	if e.ID != created.ID {
-		t.Errorf("expected ID %s, got %s", created.ID, e.ID)
+		t.Errorf("expected ID %d, got %d", created.ID, e.ID)
 	}
 }
 
 func TestGetEnrollmentNotFound(t *testing.T) {
-	client := getTestRedisClient()
-	defer cleanupTestRedis(client)
-	
-	repo := repository.NewEnrollmentRepository(client)
+	repo := repository.NewEnrollmentRepository()
 	handler := &handlers.EnrollmentHandler{Repo: repo}
 
-	req := httptest.NewRequest("GET", "/api/enrollments/nonexistent-id", nil)
-	req = mux.SetURLVars(req, map[string]string{"id": "nonexistent-id"})
+	req := httptest.NewRequest("GET", "/api/enrollments/999", nil)
+	req = mux.SetURLVars(req, map[string]string{"id": "999"})
 	w := httptest.NewRecorder()
 
 	handler.GetEnrollment(w, req)
@@ -152,20 +125,17 @@ func TestGetEnrollmentNotFound(t *testing.T) {
 }
 
 func TestGetAllEnrollments(t *testing.T) {
-	client := getTestRedisClient()
-	defer cleanupTestRedis(client)
-	
-	repo := repository.NewEnrollmentRepository(client)
+	repo := repository.NewEnrollmentRepository()
 	handler := &handlers.EnrollmentHandler{Repo: repo}
 
 	// Create test enrollments
 	enrollments := []models.Enrollment{
-		{StudentID: "student-1", CourseID: "course-1", Status: models.StatusActive},
-		{StudentID: "student-2", CourseID: "course-2", Status: models.StatusPending},
+		{StudentID: 1, CourseID: 1, Status: models.StatusActive},
+		{StudentID: 2, CourseID: 2, Status: models.StatusPending},
 	}
 
 	for _, e := range enrollments {
-		if _, err := repo.Create(&e); err != nil {
+		if _, err := repo.Create(e); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -180,7 +150,7 @@ func TestGetAllEnrollments(t *testing.T) {
 		t.Fatalf("expected status 200, got %v", res.StatusCode)
 	}
 
-	var result []*models.Enrollment
+	var result []models.Enrollment
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		t.Fatal(err)
 	}
@@ -191,26 +161,23 @@ func TestGetAllEnrollments(t *testing.T) {
 }
 
 func TestGetEnrollmentsByStudentID(t *testing.T) {
-	client := getTestRedisClient()
-	defer cleanupTestRedis(client)
-	
-	repo := repository.NewEnrollmentRepository(client)
+	repo := repository.NewEnrollmentRepository()
 	handler := &handlers.EnrollmentHandler{Repo: repo}
 
 	// Create enrollments for different students
 	enrollments := []models.Enrollment{
-		{StudentID: "student-1", CourseID: "course-1", Status: models.StatusActive},
-		{StudentID: "student-1", CourseID: "course-2", Status: models.StatusPending},
-		{StudentID: "student-2", CourseID: "course-1", Status: models.StatusActive},
+		{StudentID: 1, CourseID: 1, Status: models.StatusActive},
+		{StudentID: 1, CourseID: 2, Status: models.StatusPending},
+		{StudentID: 2, CourseID: 1, Status: models.StatusActive},
 	}
 
 	for _, e := range enrollments {
-		if _, err := repo.Create(&e); err != nil {
+		if _, err := repo.Create(e); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	req := httptest.NewRequest("GET", "/api/enrollments?student_id=student-1", nil)
+	req := httptest.NewRequest("GET", "/api/enrollments?student_id=1", nil)
 	w := httptest.NewRecorder()
 
 	handler.GetAllEnrollments(w, req)
@@ -220,38 +187,35 @@ func TestGetEnrollmentsByStudentID(t *testing.T) {
 		t.Fatalf("expected status 200, got %v", res.StatusCode)
 	}
 
-	var result []*models.Enrollment
+	var result []models.Enrollment
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		t.Fatal(err)
 	}
 
 	if len(result) != 2 {
-		t.Errorf("expected 2 enrollments for student-1, got %d", len(result))
+		t.Errorf("expected 2 enrollments for student 1, got %d", len(result))
 	}
 }
 
 func TestUpdateEnrollment(t *testing.T) {
-	client := getTestRedisClient()
-	defer cleanupTestRedis(client)
-	
-	repo := repository.NewEnrollmentRepository(client)
+	repo := repository.NewEnrollmentRepository()
 	handler := &handlers.EnrollmentHandler{Repo: repo}
 
 	// Create an enrollment
 	enrollment := models.Enrollment{
-		StudentID: "student-123",
-		CourseID:  "course-456",
+		StudentID: 123,
+		CourseID:  456,
 		Status:    models.StatusPending,
 	}
-	created, err := repo.Create(&enrollment)
+	created, err := repo.Create(enrollment)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Update to active status
 	update := `{"status":"active"}`
-	req := httptest.NewRequest("PUT", "/api/enrollments/"+created.ID, strings.NewReader(update))
-	req = mux.SetURLVars(req, map[string]string{"id": created.ID})
+	req := httptest.NewRequest("PUT", "/api/enrollments/1", strings.NewReader(update))
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	w := httptest.NewRecorder()
 
 	handler.UpdateEnrollment(w, req)
@@ -268,30 +232,30 @@ func TestUpdateEnrollment(t *testing.T) {
 	if e.Status != models.StatusActive {
 		t.Errorf("expected status active, got %s", e.Status)
 	}
+	if e.ID != created.ID {
+		t.Errorf("expected ID %d, got %d", created.ID, e.ID)
+	}
 }
 
 func TestUpdateEnrollmentInvalidTransition(t *testing.T) {
-	client := getTestRedisClient()
-	defer cleanupTestRedis(client)
-	
-	repo := repository.NewEnrollmentRepository(client)
+	repo := repository.NewEnrollmentRepository()
 	handler := &handlers.EnrollmentHandler{Repo: repo}
 
 	// Create a completed enrollment
 	enrollment := models.Enrollment{
-		StudentID: "student-123",
-		CourseID:  "course-456",
+		StudentID: 123,
+		CourseID:  456,
 		Status:    models.StatusCompleted,
 	}
-	created, err := repo.Create(&enrollment)
+	_, err := repo.Create(enrollment)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Try to update to active (invalid transition from completed)
 	update := `{"status":"active"}`
-	req := httptest.NewRequest("PUT", "/api/enrollments/"+created.ID, strings.NewReader(update))
-	req = mux.SetURLVars(req, map[string]string{"id": created.ID})
+	req := httptest.NewRequest("PUT", "/api/enrollments/1", strings.NewReader(update))
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	w := httptest.NewRecorder()
 
 	handler.UpdateEnrollment(w, req)
@@ -303,26 +267,23 @@ func TestUpdateEnrollmentInvalidTransition(t *testing.T) {
 }
 
 func TestDeleteEnrollment(t *testing.T) {
-	client := getTestRedisClient()
-	defer cleanupTestRedis(client)
-	
-	repo := repository.NewEnrollmentRepository(client)
+	repo := repository.NewEnrollmentRepository()
 	handler := &handlers.EnrollmentHandler{Repo: repo}
 
 	// Create an enrollment
 	enrollment := models.Enrollment{
-		StudentID: "student-123",
-		CourseID:  "course-456",
+		StudentID: 123,
+		CourseID:  456,
 		Status:    models.StatusActive,
 	}
-	created, err := repo.Create(&enrollment)
+	created, err := repo.Create(enrollment)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Delete the enrollment
-	req := httptest.NewRequest("DELETE", "/api/enrollments/"+created.ID, nil)
-	req = mux.SetURLVars(req, map[string]string{"id": created.ID})
+	req := httptest.NewRequest("DELETE", "/api/enrollments/1", nil)
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	w := httptest.NewRecorder()
 
 	handler.DeleteEnrollment(w, req)
@@ -333,32 +294,26 @@ func TestDeleteEnrollment(t *testing.T) {
 	}
 
 	// Verify it's deleted
-	deleted, err := repo.GetByID(created.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if deleted != nil {
+	_, ok := repo.Get(created.ID)
+	if ok {
 		t.Error("expected enrollment to be deleted")
 	}
 }
 
 func TestGetEnrollmentStats(t *testing.T) {
-	client := getTestRedisClient()
-	defer cleanupTestRedis(client)
-	
-	repo := repository.NewEnrollmentRepository(client)
+	repo := repository.NewEnrollmentRepository()
 	handler := &handlers.EnrollmentHandler{Repo: repo}
 
 	// Create enrollments with different statuses
 	enrollments := []models.Enrollment{
-		{StudentID: "student-1", CourseID: "course-1", Status: models.StatusPending},
-		{StudentID: "student-2", CourseID: "course-2", Status: models.StatusPending},
-		{StudentID: "student-3", CourseID: "course-3", Status: models.StatusActive},
-		{StudentID: "student-4", CourseID: "course-4", Status: models.StatusCompleted},
+		{StudentID: 1, CourseID: 1, Status: models.StatusPending},
+		{StudentID: 2, CourseID: 2, Status: models.StatusPending},
+		{StudentID: 3, CourseID: 3, Status: models.StatusActive},
+		{StudentID: 4, CourseID: 4, Status: models.StatusCompleted},
 	}
 
 	for _, e := range enrollments {
-		if _, err := repo.Create(&e); err != nil {
+		if _, err := repo.Create(e); err != nil {
 			t.Fatal(err)
 		}
 	}

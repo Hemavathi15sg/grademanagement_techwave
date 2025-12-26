@@ -5,10 +5,10 @@ A comprehensive Go backend for managing students, grades, and course enrollments
 ## Features
 
 - Student and Grade domain with CRUD operations
-- **NEW:** Student Enrollment Management with Redis storage
+- **NEW:** Student Enrollment Management with in-memory storage
 - RESTful API using Gorilla Mux
 - Repository and handler patterns
-- Redis-backed persistence for enrollments
+- In-memory persistence for all entities (students, grades, enrollments)
 - Status-based enrollment workflow (pending → active → completed)
 - Unit test samples
 - Ready for Copilot-driven development and demo scenarios
@@ -16,8 +16,6 @@ A comprehensive Go backend for managing students, grades, and course enrollments
 ## Prerequisites
 
 - **Go 1.20+** installed
-- **Redis** server running (for enrollment features)
-- **Docker** (optional, for running Redis in a container)
 
 ## Installation and Setup
 
@@ -32,39 +30,6 @@ cd grademanagement_techwave
 
 ```sh
 go mod download
-```
-
-### 3. Start Redis Server
-
-**Option A: Using Docker**
-```sh
-docker run -d -p 6379:6379 redis:latest
-```
-
-**Option B: Using local Redis installation**
-```sh
-# Ubuntu/Debian
-sudo apt-get install redis-server
-sudo service redis-server start
-
-# macOS with Homebrew
-brew install redis
-brew services start redis
-```
-
-### 4. Configure Environment Variables
-
-The application supports the following environment variables:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `REDIS_ADDR` | Redis server address | `localhost:6379` |
-| `REDIS_PASSWORD` | Redis password (if required) | Empty |
-
-**Example:**
-```sh
-export REDIS_ADDR="localhost:6379"
-export REDIS_PASSWORD=""
 ```
 
 ## Run the Server
@@ -155,15 +120,15 @@ Grades use in-memory storage.
 
 ## Enrollment Management API
 
-Enrollments use **Redis** for persistence with advanced querying capabilities.
+Enrollments use **in-memory storage** following the same pattern as students and grades.
 
 ### Enrollment Model
 
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "student_id": "student-123",
-  "course_id": "course-456",
+  "id": 1,
+  "student_id": 123,
+  "course_id": 456,
   "enrollment_date": "2024-01-15T10:30:00Z",
   "status": "active",
   "created_at": "2024-01-15T10:30:00Z",
@@ -191,23 +156,23 @@ The enrollment system supports three status values with enforced transitions:
 
 #### 1. Create Enrollment
 
-Creates a new enrollment with auto-generated UUID and timestamps.
+Creates a new enrollment with auto-generated ID and timestamps.
 
 - **POST** `/api/enrollments`
 - **Request Body:**
   ```json
   {
-    "student_id": "student-123",
-    "course_id": "course-456",
+    "student_id": 123,
+    "course_id": 456,
     "status": "pending"
   }
   ```
 - **Response:** 201 Created
   ```json
   {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "student_id": "student-123",
-    "course_id": "course-456",
+    "id": 1,
+    "student_id": 123,
+    "course_id": 456,
     "enrollment_date": "2024-01-15T10:30:00Z",
     "status": "pending",
     "created_at": "2024-01-15T10:30:00Z",
@@ -217,30 +182,29 @@ Creates a new enrollment with auto-generated UUID and timestamps.
 - **Status Codes:**
   - `201` - Enrollment created successfully
   - `400` - Validation error (missing fields, invalid status)
-  - `500` - Internal server error
 
 **cURL Example:**
 ```sh
 curl -X POST http://localhost:8080/api/enrollments \
   -H "Content-Type: application/json" \
   -d '{
-    "student_id": "student-123",
-    "course_id": "course-456",
+    "student_id": 123,
+    "course_id": 456,
     "status": "pending"
   }'
 ```
 
 #### 2. Get Enrollment by ID
 
-Retrieves a specific enrollment by its UUID.
+Retrieves a specific enrollment by its ID.
 
 - **GET** `/api/enrollments/{id}`
 - **Response:** 200 OK
   ```json
   {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "student_id": "student-123",
-    "course_id": "course-456",
+    "id": 1,
+    "student_id": 123,
+    "course_id": 456,
     "enrollment_date": "2024-01-15T10:30:00Z",
     "status": "active",
     "created_at": "2024-01-15T10:30:00Z",
@@ -250,11 +214,10 @@ Retrieves a specific enrollment by its UUID.
 - **Status Codes:**
   - `200` - Enrollment found
   - `404` - Enrollment not found
-  - `500` - Internal server error
 
 **cURL Example:**
 ```sh
-curl http://localhost:8080/api/enrollments/550e8400-e29b-41d4-a716-446655440000
+curl http://localhost:8080/api/enrollments/1
 ```
 
 #### 3. Get All Enrollments (with filtering)
@@ -271,9 +234,9 @@ Retrieves enrollments with optional query parameters for filtering.
   ```json
   [
     {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "student_id": "student-123",
-      "course_id": "course-456",
+      "id": "1",
+      "student_id": 123,
+      "course_id": 456,
       "enrollment_date": "2024-01-15T10:30:00Z",
       "status": "active",
       "created_at": "2024-01-15T10:30:00Z",
@@ -314,9 +277,9 @@ Updates an existing enrollment with status transition validation.
 - **Response:** 200 OK
   ```json
   {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "student_id": "student-123",
-    "course_id": "course-456",
+    "id": "1",
+    "student_id": 123,
+    "course_id": 456,
     "enrollment_date": "2024-01-15T10:30:00Z",
     "status": "active",
     "created_at": "2024-01-15T10:30:00Z",
@@ -331,7 +294,7 @@ Updates an existing enrollment with status transition validation.
 
 **cURL Example:**
 ```sh
-curl -X PUT http://localhost:8080/api/enrollments/550e8400-e29b-41d4-a716-446655440000 \
+curl -X PUT http://localhost:8080/api/enrollments/1 \
   -H "Content-Type: application/json" \
   -d '{"status": "active"}'
 ```
@@ -349,7 +312,7 @@ Removes an enrollment and all its index entries from Redis.
 
 **cURL Example:**
 ```sh
-curl -X DELETE http://localhost:8080/api/enrollments/550e8400-e29b-41d4-a716-446655440000
+curl -X DELETE http://localhost:8080/api/enrollments/1
 ```
 
 #### 6. Get Enrollment Statistics
@@ -396,39 +359,6 @@ status must be one of: pending, active, completed
 | `400` | Invalid status value (not pending/active/completed) |
 | `400` | Invalid status transition (e.g., completed → active) |
 | `404` | Enrollment ID not found |
-| `500` | Redis connection error or internal server error |
-
-## Redis Data Structure
-
-Enrollments are stored in Redis using the following key structure:
-
-### Primary Data Keys
-- **`enrollment:{id}`** - Stores enrollment JSON data
-  ```
-  enrollment:550e8400-e29b-41d4-a716-446655440000 → {"id":"550e8400-...", ...}
-  ```
-
-### Index Sets (for fast queries)
-- **`enrollments:all`** - Set of all enrollment IDs
-- **`student:enrollments:{student_id}`** - Set of enrollment IDs for a student
-- **`course:enrollments:{course_id}`** - Set of enrollment IDs for a course
-
-### Example Redis Operations
-
-View all enrollment IDs:
-```sh
-redis-cli SMEMBERS enrollments:all
-```
-
-View enrollments for a specific student:
-```sh
-redis-cli SMEMBERS student:enrollments:student-123
-```
-
-View a specific enrollment:
-```sh
-redis-cli GET enrollment:550e8400-e29b-41d4-a716-446655440000
-```
 
 ## Testing
 
@@ -444,16 +374,14 @@ go test ./... -v
 # Test students and grades
 go test ./tests -v -run TestCreateStudent
 
-# Test enrollments (requires Redis)
+# Test enrollments
 go test ./tests -v -run TestCreateEnrollment
 ```
 
 ### Test Requirements
 
-- **Student/Grade Tests:** No external dependencies (in-memory)
-- **Enrollment Tests:** Requires Redis server running on `localhost:6379`
-  - Tests use database 15 to avoid conflicts with production data
-  - Database is flushed before each test
+- **All Tests:** No external dependencies - all use in-memory storage
+- Tests are self-contained and can run independently
 
 ## Build the Application
 
@@ -462,43 +390,23 @@ go build -o techwave-app .
 ./techwave-app
 ```
 
-## Troubleshooting
+## Performance Considerations
 
-### Redis Connection Error
+### Enrollment Operations
 
-**Problem:** `connection refused` or `cannot connect to Redis`
+All operations use in-memory storage with concurrent access protection via sync.RWMutex:
 
-**Solutions:**
-1. Verify Redis is running:
-   ```sh
-   redis-cli ping
-   # Should return: PONG
-   ```
+- **Create:** O(1) - Direct map insertion with ID generation
+- **Get by ID:** O(1) - Direct map lookup
+- **Get All:** O(n) - Iterates through all enrollments
+- **Filter by Student/Course:** O(n) - Linear scan with filtering
+- **Update:** O(1) - Direct map update with validation
+- **Delete:** O(1) - Direct map deletion
+- **Stats:** O(n) - Iterates through all enrollments to aggregate
 
-2. Check Redis address configuration:
-   ```sh
-   export REDIS_ADDR="localhost:6379"
-   ```
+### Common Issues
 
-3. Start Redis if not running:
-   ```sh
-   # Docker
-   docker run -d -p 6379:6379 redis:latest
-   
-   # Or use your system's service manager
-   sudo service redis-server start
-   ```
-
-### Enrollment Test Failures
-
-**Problem:** Tests fail with Redis errors
-
-**Solutions:**
-1. Ensure Redis is running before running tests
-2. Check that port 6379 is available
-3. Verify firewall settings allow local Redis connections
-
-### Status Transition Errors
+#### Status Transition Errors
 
 **Problem:** `400 Bad Request` when updating enrollment status
 
@@ -509,25 +417,6 @@ go build -o techwave-app .
 - ✓ active → completed
 - ✗ completed → (no transitions)
 - ✗ active → pending
-
-## Performance Considerations
-
-### Enrollment Operations
-
-- **Create:** O(1) - Uses Redis SET and SADD operations
-- **Get by ID:** O(1) - Direct Redis GET
-- **Get All:** O(n) - Retrieves all enrollments
-- **Filter by Student/Course:** O(n) - Set membership lookup + data fetch
-- **Update:** O(1) - Single Redis SET operation
-- **Delete:** O(1) - Uses Redis pipeline for atomic deletion
-- **Stats:** O(n) - Fetches all enrollments and aggregates in memory
-
-### Redis Best Practices
-
-1. **Indexing:** Multiple indexes maintained for fast queries
-2. **Atomic Operations:** Pipeline/transactions ensure data consistency
-3. **Key Expiration:** Currently disabled (0 TTL) - add if needed for temporary enrollments
-4. **Connection Pooling:** go-redis handles connection pooling automatically
 
 ## Project Structure
 
@@ -542,7 +431,7 @@ go build -o techwave-app .
 │   ├── grade.go
 │   └── student.go
 ├── repository/        # Data access layer
-│   ├── enrollment_repository.go  (Redis)
+│   ├── enrollment_repository.go  (In-memory)
 │   ├── grade_repository.go       (In-memory)
 │   └── student_repository.go     (In-memory)
 ├── routes/            # Route registration
@@ -559,8 +448,6 @@ go build -o techwave-app .
 ## Dependencies
 
 - **github.com/gorilla/mux** v1.8.0 - HTTP router
-- **github.com/go-redis/redis/v8** v8.11.5 - Redis client
-- **github.com/google/uuid** v1.6.0 - UUID generation
 
 ## License
 
