@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"techwave/models"
 	"techwave/repository"
 
@@ -15,7 +16,7 @@ type EnrollmentHandler struct {
 }
 
 // CreateEnrollment handles POST requests to create a new enrollment
-// Returns 201 Created on success, 400 Bad Request on validation errors, 500 on server errors
+// Returns 201 Created on success, 400 Bad Request on validation errors
 func (h *EnrollmentHandler) CreateEnrollment(w http.ResponseWriter, r *http.Request) {
 	var enrollment models.Enrollment
 	if err := json.NewDecoder(r.Body).Decode(&enrollment); err != nil {
@@ -23,9 +24,8 @@ func (h *EnrollmentHandler) CreateEnrollment(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	
-	created, err := h.Repo.Create(&enrollment)
+	created, err := h.Repo.Create(enrollment)
 	if err != nil {
-		// Check if it's a validation error (return 400) or server error (return 500)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -36,23 +36,17 @@ func (h *EnrollmentHandler) CreateEnrollment(w http.ResponseWriter, r *http.Requ
 }
 
 // GetEnrollment handles GET requests to retrieve a specific enrollment by ID
-// Returns 200 OK with enrollment, 404 Not Found if doesn't exist, 500 on server errors
+// Returns 200 OK with enrollment, 404 Not Found if doesn't exist
 func (h *EnrollmentHandler) GetEnrollment(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
-	
-	if id == "" {
-		http.Error(w, "Enrollment ID is required", http.StatusBadRequest)
-		return
-	}
-	
-	enrollment, err := h.Repo.GetByID(id)
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Internal server error: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 	
-	if enrollment == nil {
+	enrollment, ok := h.Repo.Get(id)
+	if !ok {
 		http.Error(w, "Enrollment not found", http.StatusNotFound)
 		return
 	}
@@ -66,47 +60,47 @@ func (h *EnrollmentHandler) GetEnrollment(w http.ResponseWriter, r *http.Request
 //   - student_id: filter by student
 //   - course_id: filter by course
 //   - both: get specific enrollment for student in course
-// Returns 200 OK with array of enrollments, 500 on server errors
+// Returns 200 OK with array of enrollments
 func (h *EnrollmentHandler) GetAllEnrollments(w http.ResponseWriter, r *http.Request) {
-	studentID := r.URL.Query().Get("student_id")
-	courseID := r.URL.Query().Get("course_id")
+	studentIDStr := r.URL.Query().Get("student_id")
+	courseIDStr := r.URL.Query().Get("course_id")
 	
-	var enrollments []*models.Enrollment
-	var err error
+	var enrollments []models.Enrollment
 	
 	// If both student_id and course_id are provided, get specific enrollment
-	if studentID != "" && courseID != "" {
-		enrollment, err := h.Repo.GetByStudentAndCourse(studentID, courseID)
-		if err != nil {
-			http.Error(w, "Internal server error: "+err.Error(), http.StatusInternalServerError)
+	if studentIDStr != "" && courseIDStr != "" {
+		studentID, err1 := strconv.Atoi(studentIDStr)
+		courseID, err2 := strconv.Atoi(courseIDStr)
+		if err1 != nil || err2 != nil {
+			http.Error(w, "Invalid student_id or course_id", http.StatusBadRequest)
 			return
 		}
-		if enrollment != nil {
-			enrollments = []*models.Enrollment{enrollment}
+		
+		enrollment, ok := h.Repo.GetByStudentAndCourse(studentID, courseID)
+		if ok {
+			enrollments = []models.Enrollment{enrollment}
 		} else {
-			enrollments = []*models.Enrollment{}
+			enrollments = []models.Enrollment{}
 		}
-	} else if studentID != "" {
+	} else if studentIDStr != "" {
 		// Filter by student
-		enrollments, err = h.Repo.GetByStudentID(studentID)
+		studentID, err := strconv.Atoi(studentIDStr)
 		if err != nil {
-			http.Error(w, "Internal server error: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Invalid student_id", http.StatusBadRequest)
 			return
 		}
-	} else if courseID != "" {
+		enrollments = h.Repo.GetByStudentID(studentID)
+	} else if courseIDStr != "" {
 		// Filter by course
-		enrollments, err = h.Repo.GetByCourseID(courseID)
+		courseID, err := strconv.Atoi(courseIDStr)
 		if err != nil {
-			http.Error(w, "Internal server error: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Invalid course_id", http.StatusBadRequest)
 			return
 		}
+		enrollments = h.Repo.GetByCourseID(courseID)
 	} else {
 		// Get all enrollments
-		enrollments, err = h.Repo.GetAll()
-		if err != nil {
-			http.Error(w, "Internal server error: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
+		enrollments = h.Repo.List()
 	}
 	
 	w.Header().Set("Content-Type", "application/json")
@@ -114,13 +108,12 @@ func (h *EnrollmentHandler) GetAllEnrollments(w http.ResponseWriter, r *http.Req
 }
 
 // UpdateEnrollment handles PUT requests to update an existing enrollment
-// Returns 200 OK with updated enrollment, 400 on validation errors, 404 if not found, 500 on server errors
+// Returns 200 OK with updated enrollment, 400 on validation errors, 404 if not found
 func (h *EnrollmentHandler) UpdateEnrollment(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
-	
-	if id == "" {
-		http.Error(w, "Enrollment ID is required", http.StatusBadRequest)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 	
@@ -130,14 +123,13 @@ func (h *EnrollmentHandler) UpdateEnrollment(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	
-	updated, err := h.Repo.Update(id, &updates)
+	updated, err := h.Repo.Update(id, updates)
 	if err != nil {
-		// Check if it's a validation error (return 400) or server error (return 500)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	
-	if updated == nil {
+	if updated.ID == 0 {
 		http.Error(w, "Enrollment not found", http.StatusNotFound)
 		return
 	}
@@ -147,30 +139,18 @@ func (h *EnrollmentHandler) UpdateEnrollment(w http.ResponseWriter, r *http.Requ
 }
 
 // DeleteEnrollment handles DELETE requests to remove an enrollment
-// Returns 204 No Content on success, 404 if not found, 500 on server errors
+// Returns 204 No Content on success, 404 if not found
 func (h *EnrollmentHandler) DeleteEnrollment(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
-	
-	if id == "" {
-		http.Error(w, "Enrollment ID is required", http.StatusBadRequest)
-		return
-	}
-	
-	// Check if enrollment exists before deletion
-	enrollment, err := h.Repo.GetByID(id)
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Internal server error: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 	
-	if enrollment == nil {
+	ok := h.Repo.Delete(id)
+	if !ok {
 		http.Error(w, "Enrollment not found", http.StatusNotFound)
-		return
-	}
-	
-	if err := h.Repo.Delete(id); err != nil {
-		http.Error(w, "Internal server error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	
@@ -180,11 +160,7 @@ func (h *EnrollmentHandler) DeleteEnrollment(w http.ResponseWriter, r *http.Requ
 // GetEnrollmentStats handles GET requests to retrieve enrollment statistics
 // Returns 200 OK with statistics grouped by status
 func (h *EnrollmentHandler) GetEnrollmentStats(w http.ResponseWriter, r *http.Request) {
-	stats, err := h.Repo.GetEnrollmentStats()
-	if err != nil {
-		http.Error(w, "Internal server error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	stats := h.Repo.GetEnrollmentStats()
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(stats)
