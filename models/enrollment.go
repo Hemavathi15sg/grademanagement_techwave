@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"errors"
 	"time"
 )
@@ -20,9 +19,9 @@ const (
 
 // Enrollment represents a student's enrollment in a course
 type Enrollment struct {
-	ID             string           `json:"id"`
-	StudentID      string           `json:"student_id"`
-	CourseID       string           `json:"course_id"`
+	ID             int              `json:"id"`
+	StudentID      int              `json:"student_id"`
+	CourseID       int              `json:"course_id"`
 	EnrollmentDate time.Time        `json:"enrollment_date"`
 	Status         EnrollmentStatus `json:"status"`
 	CreatedAt      time.Time        `json:"created_at"`
@@ -31,10 +30,10 @@ type Enrollment struct {
 
 // Validate checks if the enrollment has all required fields and valid status
 func (e *Enrollment) Validate() error {
-	if e.StudentID == "" {
+	if e.StudentID == 0 {
 		return errors.New("student_id is required")
 	}
-	if e.CourseID == "" {
+	if e.CourseID == 0 {
 		return errors.New("course_id is required")
 	}
 	if e.Status == "" {
@@ -87,14 +86,4 @@ func (e *Enrollment) ValidateStatusTransition(newStatus EnrollmentStatus) error 
 	default:
 		return errors.New("unknown current status")
 	}
-}
-
-// ToJSON serializes the enrollment to JSON bytes for Redis storage
-func (e *Enrollment) ToJSON() ([]byte, error) {
-	return json.Marshal(e)
-}
-
-// FromJSON deserializes enrollment from JSON bytes retrieved from Redis
-func (e *Enrollment) FromJSON(data []byte) error {
-	return json.Unmarshal(data, e)
 }
