@@ -101,7 +101,7 @@ func NewCompletedEnrollment() models.Enrollment {
 // This is useful for testing validation logic
 func NewEnrollmentWithInvalidStatus() models.Enrollment {
 	enrollment := NewEnrollmentFactory().Build()
-	// Use a type assertion to set an invalid status that bypasses type safety
+	// Use type conversion to set an invalid status that bypasses compile-time type safety
 	enrollment.Status = models.EnrollmentStatus("invalid_status")
 	return enrollment
 }
