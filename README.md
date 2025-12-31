@@ -254,13 +254,13 @@ Retrieves enrollments with optional query parameters for filtering.
 curl http://localhost:8080/api/enrollments
 
 # Get enrollments for a specific student
-curl http://localhost:8080/api/enrollments?student_id=student-123
+curl http://localhost:8080/api/enrollments?student_id=123
 
 # Get enrollments for a specific course
-curl http://localhost:8080/api/enrollments?course_id=course-456
+curl http://localhost:8080/api/enrollments?course_id=456
 
 # Get specific enrollment for student in course
-curl "http://localhost:8080/api/enrollments?student_id=student-123&course_id=course-456"
+curl "http://localhost:8080/api/enrollments?student_id=123&course_id=456"
 ```
 
 #### 4. Update Enrollment
