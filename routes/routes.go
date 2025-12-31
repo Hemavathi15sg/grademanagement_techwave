@@ -24,4 +24,18 @@ func RegisterRoutes(r *mux.Router) {
     r.HandleFunc("/grades/{id}", gradeHandler.GetGrade).Methods("GET")
     r.HandleFunc("/grades/{id}", gradeHandler.UpdateGrade).Methods("PUT")
     r.HandleFunc("/grades/{id}", gradeHandler.DeleteGrade).Methods("DELETE")
+
+    // Enrollment routes with in-memory repository
+    enrollmentRepo := repository.NewEnrollmentRepository()
+    enrollmentHandler := &handlers.EnrollmentHandler{Repo: enrollmentRepo}
+
+    // Use /api prefix for enrollment routes as specified in requirements
+    apiRouter := r.PathPrefix("/api").Subrouter()
+    
+    apiRouter.HandleFunc("/enrollments", enrollmentHandler.CreateEnrollment).Methods("POST")
+    apiRouter.HandleFunc("/enrollments", enrollmentHandler.GetAllEnrollments).Methods("GET")
+    apiRouter.HandleFunc("/enrollments/stats", enrollmentHandler.GetEnrollmentStats).Methods("GET")
+    apiRouter.HandleFunc("/enrollments/{id}", enrollmentHandler.GetEnrollment).Methods("GET")
+    apiRouter.HandleFunc("/enrollments/{id}", enrollmentHandler.UpdateEnrollment).Methods("PUT")
+    apiRouter.HandleFunc("/enrollments/{id}", enrollmentHandler.DeleteEnrollment).Methods("DELETE")
 }
