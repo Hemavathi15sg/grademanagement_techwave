@@ -50,13 +50,15 @@ jobs:
         # Detect flaky pattern
         FAIL_COUNT=$((RUN1_EXIT + RUN2_EXIT + RUN3_EXIT))
         
-        if [ $FAIL_COUNT -gt 0 ] && [ $FAIL_COUNT -lt 3 ]; then
+        if [ $FAIL_COUNT -gt 0 ]; then
+          # Any failures = flaky or consistently broken, both need attention
           echo "FLAKY_DETECTED=true" >> $GITHUB_ENV
           echo "FAIL_COUNT=$FAIL_COUNT" >> $GITHUB_ENV
-          echo "❌ FLAKY TEST DETECTED: Failed $FAIL_COUNT out of 3 runs"
-        elif [ $FAIL_COUNT -eq 3 ]; then
-          echo "FLAKY_DETECTED=false" >> $GITHUB_ENV
-          echo "❌ TEST CONSISTENTLY FAILING: Failed all 3 runs"
+          if [ $FAIL_COUNT -eq 3 ]; then
+            echo "❌ CONSISTENTLY FAILING: Failed all 3 runs (needs immediate fix)"
+          else
+            echo "❌ FLAKY TEST DETECTED: Failed $FAIL_COUNT out of 3 runs"
+          fi
         else
           echo "FLAKY_DETECTED=false" >> $GITHUB_ENV
           echo "✅ TEST STABLE: Passed all 3 runs"
