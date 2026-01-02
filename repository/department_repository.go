@@ -43,8 +43,8 @@ func (r *DepartmentRepository) Create(department models.Department) (models.Depa
 	defer r.mu.Unlock()
 
 	// Check if code already exists
-	if _, exists := r.codeIndex[department.Code]; exists {
-		return models.Department{}, fmt.Errorf("department with code %s already exists", department.Code)
+	if _, exists := r.codeIndex[department.DepartmentCode]; exists {
+		return models.Department{}, fmt.Errorf("department with code %s already exists", department.DepartmentCode)
 	}
 
 	// Generate ID
@@ -57,7 +57,7 @@ func (r *DepartmentRepository) Create(department models.Department) (models.Depa
 	department.UpdatedAt = now
 
 	r.data[department.ID] = department
-	r.codeIndex[department.Code] = department.ID
+	r.codeIndex[department.DepartmentCode] = department.ID
 
 	// Cache in Redis if available
 	if r.redisClient != nil {
@@ -138,21 +138,27 @@ func (r *DepartmentRepository) Update(id int, updates models.Department) (models
 	}
 
 	// Update fields if provided
-	if updates.Name != "" {
-		existing.Name = updates.Name
+	if updates.DepartmentName != "" {
+		existing.DepartmentName = updates.DepartmentName
 	}
-	if updates.Code != "" && updates.Code != existing.Code {
+	if updates.DepartmentCode != "" && updates.DepartmentCode != existing.DepartmentCode {
 		// Check if new code already exists
-		if existingID, codeExists := r.codeIndex[updates.Code]; codeExists && existingID != id {
-			return models.Department{}, fmt.Errorf("department with code %s already exists", updates.Code)
+		if existingID, codeExists := r.codeIndex[updates.DepartmentCode]; codeExists && existingID != id {
+			return models.Department{}, fmt.Errorf("department with code %s already exists", updates.DepartmentCode)
 		}
 		// Remove old code index and add new one
-		delete(r.codeIndex, existing.Code)
-		r.codeIndex[updates.Code] = id
-		existing.Code = updates.Code
+		delete(r.codeIndex, existing.DepartmentCode)
+		r.codeIndex[updates.DepartmentCode] = id
+		existing.DepartmentCode = updates.DepartmentCode
 	}
-	if updates.HeadName != "" {
-		existing.HeadName = updates.HeadName
+	if updates.DepartmentHead != "" {
+		existing.DepartmentHead = updates.DepartmentHead
+	}
+	if updates.AnnualBudget > 0 {
+		existing.AnnualBudget = updates.AnnualBudget
+	}
+	if updates.Status != "" {
+		existing.Status = updates.Status
 	}
 
 	// Validate updated department
@@ -182,7 +188,7 @@ func (r *DepartmentRepository) Delete(id int) bool {
 	department, exists := r.data[id]
 	if exists {
 		delete(r.data, id)
-		delete(r.codeIndex, department.Code)
+		delete(r.codeIndex, department.DepartmentCode)
 
 		// Invalidate cache if Redis is available
 		if r.redisClient != nil {
@@ -213,7 +219,7 @@ func (r *DepartmentRepository) cacheSet(department models.Department) {
 	r.redisClient.Set(r.ctx, r.cacheKey(department.ID), data, 5*time.Minute)
 
 	// Cache by code
-	r.redisClient.Set(r.ctx, r.cacheKeyByCode(department.Code), data, 5*time.Minute)
+	r.redisClient.Set(r.ctx, r.cacheKeyByCode(department.DepartmentCode), data, 5*time.Minute)
 }
 
 func (r *DepartmentRepository) cacheGet(id int) (models.Department, bool) {
@@ -247,7 +253,7 @@ func (r *DepartmentRepository) cacheGetByCode(code string) (models.Department, b
 func (r *DepartmentRepository) cacheDelete(id int) {
 	// Get department first to delete code cache
 	if department, ok := r.data[id]; ok {
-		r.redisClient.Del(r.ctx, r.cacheKeyByCode(department.Code))
+		r.redisClient.Del(r.ctx, r.cacheKeyByCode(department.DepartmentCode))
 	}
 	r.redisClient.Del(r.ctx, r.cacheKey(id))
 }

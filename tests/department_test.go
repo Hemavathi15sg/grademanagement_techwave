@@ -45,8 +45,8 @@ func TestCreateDepartment_Success(t *testing.T) {
 	var created models.Department
 	json.NewDecoder(w.Body).Decode(&created)
 	assert.NotZero(t, created.ID)
-	assert.Equal(t, department.Name, created.Name)
-	assert.Equal(t, department.Code, created.Code)
+	assert.Equal(t, department.DepartmentName, created.DepartmentName)
+	assert.Equal(t, department.DepartmentCode, created.DepartmentCode)
 	assert.NotZero(t, created.CreatedAt)
 	assert.NotZero(t, created.UpdatedAt)
 }
@@ -67,7 +67,7 @@ func TestCreateDepartment_WithoutHeadName(t *testing.T) {
 
 	var created models.Department
 	json.NewDecoder(w.Body).Decode(&created)
-	assert.Empty(t, created.HeadName)
+	assert.Empty(t, created.DepartmentHead)
 }
 
 func TestCreateDepartment_EmptyName(t *testing.T) {
@@ -142,8 +142,8 @@ func TestGetDepartment_Success(t *testing.T) {
 	var retrieved models.Department
 	json.NewDecoder(w.Body).Decode(&retrieved)
 	assert.Equal(t, created.ID, retrieved.ID)
-	assert.Equal(t, created.Name, retrieved.Name)
-	assert.Equal(t, created.Code, retrieved.Code)
+	assert.Equal(t, created.DepartmentName, retrieved.DepartmentName)
+	assert.Equal(t, created.DepartmentCode, retrieved.DepartmentCode)
 }
 
 func TestGetDepartment_NotFound(t *testing.T) {
@@ -211,7 +211,7 @@ func TestGetDepartmentByCode_Success(t *testing.T) {
 
 	var retrieved models.Department
 	json.NewDecoder(w.Body).Decode(&retrieved)
-	assert.Equal(t, "MATH", retrieved.Code)
+	assert.Equal(t, "MATH", retrieved.DepartmentCode)
 }
 
 func TestGetDepartmentByCode_NotFound(t *testing.T) {
@@ -248,8 +248,8 @@ func TestUpdateDepartment_Success(t *testing.T) {
 
 	var updated models.Department
 	json.NewDecoder(w.Body).Decode(&updated)
-	assert.Equal(t, "Updated Computer Science", updated.Name)
-	assert.Equal(t, "Dr. Jane Doe", updated.HeadName)
+	assert.Equal(t, "Updated Computer Science", updated.DepartmentName)
+	assert.Equal(t, "Dr. Jane Doe", updated.DepartmentHead)
 }
 
 func TestUpdateDepartment_NotFound(t *testing.T) {
@@ -385,5 +385,5 @@ func TestDepartmentValidation_LongCode(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "between 2 and 10 characters")
+	assert.Contains(t, w.Body.String(), "uppercase letters")
 }
