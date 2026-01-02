@@ -138,9 +138,9 @@ func (h *GradeCalculationHandler) CalculateBatchGrades(w http.ResponseWriter, r 
 
 		result, err := models.CalculateGrade(req)
 		resultEntry := struct {
-			StudentID int                    `json:"student_id"`
+			StudentID int                      `json:"student_id"`
 			Result    models.CalculationResult `json:"result"`
-			Error     string                  `json:"error,omitempty"`
+			Error     string                   `json:"error,omitempty"`
 		}{
 			StudentID: student.StudentID,
 			Result:    result,
