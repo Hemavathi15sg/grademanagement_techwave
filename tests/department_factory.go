@@ -14,12 +14,14 @@ type DepartmentFactory struct {
 func NewDepartmentFactory() *DepartmentFactory {
 	return &DepartmentFactory{
 		department: models.Department{
-			ID:        1,
-			Name:      "Computer Science",
-			Code:      "CS",
-			HeadName:  "Dr. John Smith",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			ID:             1,
+			DepartmentCode: "CS",
+			DepartmentName: "Computer Science",
+			AnnualBudget:   5000000.00,
+			DepartmentHead: "Dr. John Smith",
+			Status:         "Active",
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
 		},
 	}
 }
@@ -30,21 +32,33 @@ func (f *DepartmentFactory) WithID(id int) *DepartmentFactory {
 	return f
 }
 
-// WithName sets the department name
-func (f *DepartmentFactory) WithName(name string) *DepartmentFactory {
-	f.department.Name = name
+// WithDepartmentName sets the department name
+func (f *DepartmentFactory) WithDepartmentName(name string) *DepartmentFactory {
+	f.department.DepartmentName = name
 	return f
 }
 
-// WithCode sets the department code
-func (f *DepartmentFactory) WithCode(code string) *DepartmentFactory {
-	f.department.Code = code
+// WithDepartmentCode sets the department code
+func (f *DepartmentFactory) WithDepartmentCode(code string) *DepartmentFactory {
+	f.department.DepartmentCode = code
 	return f
 }
 
-// WithHeadName sets the department head name
-func (f *DepartmentFactory) WithHeadName(headName string) *DepartmentFactory {
-	f.department.HeadName = headName
+// WithAnnualBudget sets the annual budget
+func (f *DepartmentFactory) WithAnnualBudget(budget float64) *DepartmentFactory {
+	f.department.AnnualBudget = budget
+	return f
+}
+
+// WithDepartmentHead sets the department head name
+func (f *DepartmentFactory) WithDepartmentHead(headName string) *DepartmentFactory {
+	f.department.DepartmentHead = headName
+	return f
+}
+
+// WithStatus sets the department status
+func (f *DepartmentFactory) WithStatus(status string) *DepartmentFactory {
+	f.department.Status = status
 	return f
 }
 
@@ -75,7 +89,7 @@ func NewValidDepartment() models.Department {
 // NewDepartmentWithoutHeadName creates a department without head name
 func NewDepartmentWithoutHeadName() models.Department {
 	return NewDepartmentFactory().
-		WithHeadName("").
+		WithDepartmentHead("").
 		Build()
 }
 
@@ -84,21 +98,21 @@ func NewDepartmentWithoutHeadName() models.Department {
 // NewDepartmentWithEmptyName creates a department with empty name
 func NewDepartmentWithEmptyName() models.Department {
 	return NewDepartmentFactory().
-		WithName("").
+		WithDepartmentName("").
 		Build()
 }
 
 // NewDepartmentWithEmptyCode creates a department with empty code
 func NewDepartmentWithEmptyCode() models.Department {
 	return NewDepartmentFactory().
-		WithCode("").
+		WithDepartmentCode("").
 		Build()
 }
 
 // NewDepartmentWithShortName creates a department with too short name
 func NewDepartmentWithShortName() models.Department {
 	return NewDepartmentFactory().
-		WithName("A").
+		WithDepartmentName("A").
 		Build()
 }
 
@@ -109,21 +123,21 @@ func NewDepartmentWithLongName() models.Department {
 		longName += "A"
 	}
 	return NewDepartmentFactory().
-		WithName(longName).
+		WithDepartmentName(longName).
 		Build()
 }
 
 // NewDepartmentWithShortCode creates a department with too short code
 func NewDepartmentWithShortCode() models.Department {
 	return NewDepartmentFactory().
-		WithCode("A").
+		WithDepartmentCode("A").
 		Build()
 }
 
 // NewDepartmentWithLongCode creates a department with too long code
 func NewDepartmentWithLongCode() models.Department {
 	return NewDepartmentFactory().
-		WithCode("VERYLONGCODE").
+		WithDepartmentCode("TOOLONG").
 		Build()
 }
 
@@ -139,8 +153,8 @@ func NewDepartmentBatch(count int) []models.Department {
 		nameIdx := i % len(departmentNames)
 		departments[i] = NewDepartmentFactory().
 			WithID(i + 1).
-			WithName(departmentNames[nameIdx]).
-			WithCode(departmentCodes[nameIdx]).
+			WithDepartmentName(departmentNames[nameIdx]).
+			WithDepartmentCode(departmentCodes[nameIdx]).
 			Build()
 	}
 	return departments
@@ -151,25 +165,25 @@ func NewDepartmentBatch(count int) []models.Department {
 // NewDepartmentWithCode creates a department with a specific code
 func NewDepartmentWithCode(code string) models.Department {
 	return NewDepartmentFactory().
-		WithCode(code).
+		WithDepartmentCode(code).
 		Build()
 }
 
 // NewDepartmentWithNameAndCode creates a department with specific name and code
 func NewDepartmentWithNameAndCode(name, code string) models.Department {
 	return NewDepartmentFactory().
-		WithName(name).
-		WithCode(code).
+		WithDepartmentName(name).
+		WithDepartmentCode(code).
 		Build()
 }
 
 // NewCommonDepartments creates a set of commonly used departments for testing
 func NewCommonDepartments() []models.Department {
 	return []models.Department{
-		NewDepartmentFactory().WithID(1).WithName("Computer Science").WithCode("CS").Build(),
-		NewDepartmentFactory().WithID(2).WithName("Mathematics").WithCode("MATH").Build(),
-		NewDepartmentFactory().WithID(3).WithName("Physics").WithCode("PHYS").Build(),
-		NewDepartmentFactory().WithID(4).WithName("Chemistry").WithCode("CHEM").Build(),
-		NewDepartmentFactory().WithID(5).WithName("Biology").WithCode("BIO").Build(),
+		NewDepartmentFactory().WithID(1).WithDepartmentName("Computer Science").WithDepartmentCode("CS").Build(),
+		NewDepartmentFactory().WithID(2).WithDepartmentName("Mathematics").WithDepartmentCode("MATH").Build(),
+		NewDepartmentFactory().WithID(3).WithDepartmentName("Physics").WithDepartmentCode("PHYS").Build(),
+		NewDepartmentFactory().WithID(4).WithDepartmentName("Chemistry").WithDepartmentCode("CHEM").Build(),
+		NewDepartmentFactory().WithID(5).WithDepartmentName("Biology").WithDepartmentCode("BIO").Build(),
 	}
 }
