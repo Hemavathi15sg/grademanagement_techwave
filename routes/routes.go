@@ -49,4 +49,10 @@ func RegisterRoutes(r *mux.Router) {
 	apiRouter.HandleFunc("/departments/{id}", departmentHandler.GetDepartment).Methods("GET")
 	apiRouter.HandleFunc("/departments/{id}", departmentHandler.UpdateDepartment).Methods("PUT")
 	apiRouter.HandleFunc("/departments/{id}", departmentHandler.DeleteDepartment).Methods("DELETE")
+
+	// Grade Calculation routes - TEC-11
+	gradeCalcHandler := handlers.NewGradeCalculationHandler()
+	apiRouter.HandleFunc("/grades/calculate", gradeCalcHandler.CalculateGrade).Methods("POST")
+	apiRouter.HandleFunc("/grades/calculate/batch", gradeCalcHandler.CalculateBatchGrades).Methods("POST")
+	apiRouter.HandleFunc("/grades/scale", gradeCalcHandler.GetGradeScale).Methods("GET")
 }
