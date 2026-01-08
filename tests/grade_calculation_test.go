@@ -63,33 +63,33 @@ func TestApplyCurve(t *testing.T) {
 			expected: 85,
 		},
 		{
-			name:  "curve disabled",
-			score: 85,
-			curve: &models.GradeCurve{Enabled: false, Adjustment: 5},
+			name:     "curve disabled",
+			score:    85,
+			curve:    &models.GradeCurve{Enabled: false, Adjustment: 5},
 			expected: 85,
 		},
 		{
-			name:  "positive adjustment",
-			score: 75,
-			curve: &models.GradeCurve{Enabled: true, Adjustment: 10},
+			name:     "positive adjustment",
+			score:    75,
+			curve:    &models.GradeCurve{Enabled: true, Adjustment: 10},
 			expected: 85,
 		},
 		{
-			name:  "negative adjustment",
-			score: 85,
-			curve: &models.GradeCurve{Enabled: true, Adjustment: -5},
+			name:     "negative adjustment",
+			score:    85,
+			curve:    &models.GradeCurve{Enabled: true, Adjustment: -5},
 			expected: 80,
 		},
 		{
-			name:  "capped at 100",
-			score: 95,
-			curve: &models.GradeCurve{Enabled: true, Adjustment: 10},
+			name:     "capped at 100",
+			score:    95,
+			curve:    &models.GradeCurve{Enabled: true, Adjustment: 10},
 			expected: 100,
 		},
 		{
-			name:  "capped at 0",
-			score: 5,
-			curve: &models.GradeCurve{Enabled: true, Adjustment: -10},
+			name:     "capped at 0",
+			score:    5,
+			curve:    &models.GradeCurve{Enabled: true, Adjustment: -10},
 			expected: 0,
 		},
 	}
@@ -106,10 +106,10 @@ func TestApplyCurve(t *testing.T) {
 
 func TestConvertToLetterGrade(t *testing.T) {
 	tests := []struct {
-		name          string
-		numericScore  float64
+		name           string
+		numericScore   float64
 		expectedLetter string
-		expectedColor string
+		expectedColor  string
 	}{
 		{name: "A+ grade", numericScore: 98, expectedLetter: "A+", expectedColor: "#22C55E"},
 		{name: "A grade", numericScore: 95, expectedLetter: "A", expectedColor: "#22C55E"},
@@ -141,10 +141,10 @@ func TestConvertToLetterGrade(t *testing.T) {
 
 func TestCalculateGrade(t *testing.T) {
 	tests := []struct {
-		name           string
-		request        models.CalculationRequest
-		expectedGrade  string
-		expectedError  bool
+		name          string
+		request       models.CalculationRequest
+		expectedGrade string
+		expectedError bool
 	}{
 		{
 			name: "excellent grade without curve",

@@ -10,8 +10,8 @@ type LetterGrade struct {
 	Letter      string  `json:"letter"`
 	MinPoints   float64 `json:"min_points"`
 	MaxPoints   float64 `json:"max_points"`
-	Color       string  `json:"color"`        // Hex color from Figma
-	Description string  `json:"description"`  // e.g., "Excellent", "Good"
+	Color       string  `json:"color"`       // Hex color from Figma
+	Description string  `json:"description"` // e.g., "Excellent", "Good"
 }
 
 // GradeScale defines the complete grading scale from Figma design
@@ -50,10 +50,10 @@ type CalculationRequest struct {
 
 // CalculationResult represents the calculated grade for a single student
 type CalculationResult struct {
-	NumericGrade  float64      `json:"numeric_grade"`
-	LetterGrade   LetterGrade  `json:"letter_grade"`
-	CurveApplied  bool         `json:"curve_applied"`
-	CurveAdjustment float64    `json:"curve_adjustment,omitempty"`
+	NumericGrade    float64     `json:"numeric_grade"`
+	LetterGrade     LetterGrade `json:"letter_grade"`
+	CurveApplied    bool        `json:"curve_applied"`
+	CurveAdjustment float64     `json:"curve_adjustment,omitempty"`
 }
 
 // CalculationResponse contains the result and metadata
