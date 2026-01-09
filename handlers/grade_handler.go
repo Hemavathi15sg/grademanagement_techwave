@@ -47,7 +47,7 @@ func (h *GradeHandler) GetGrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Direct data access in handler 
+	// Direct data access in handler
 	gradesMu.RLock()
 	grade, ok := grades[id]
 	gradesMu.RUnlock()
@@ -61,7 +61,7 @@ func (h *GradeHandler) GetGrade(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *GradeHandler) ListGrades(w http.ResponseWriter, r *http.Request) {
-	// Direct data access in handler 
+	// Direct data access in handler
 	gradesMu.RLock()
 	list := make([]models.Grade, 0, len(grades))
 	for _, g := range grades {
@@ -85,7 +85,7 @@ func (h *GradeHandler) UpdateGrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Direct data access in handler 
+	// Direct data access in handler
 	gradesMu.Lock()
 	_, ok := grades[id]
 	if !ok {
@@ -108,7 +108,7 @@ func (h *GradeHandler) DeleteGrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Direct data access in handler 
+	// Direct data access in handler
 	gradesMu.Lock()
 	_, ok := grades[id]
 	if !ok {

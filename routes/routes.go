@@ -7,7 +7,7 @@ import (
 )
 
 func RegisterRoutes(r *mux.Router) {
-	// No repositories - handlers do everything (messy!)
+	// No repositories - handlers do everything 
 	studentHandler := &handlers.StudentHandler{}
 
 	r.HandleFunc("/students", studentHandler.CreateStudent).Methods("POST")
