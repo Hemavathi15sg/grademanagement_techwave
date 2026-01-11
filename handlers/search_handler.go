@@ -13,6 +13,7 @@ func SearchEnrollments(w http.ResponseWriter, r *http.Request, db *sql.DB) {
     // VULNERABLE: SQL Injection
     query := "SELECT * FROM enrollments WHERE student_name = '" + studentName + "'"
     
+    
     rows, err := db.Query(query)
     if err != nil {
         http.Error(w, err.Error(), 500)
