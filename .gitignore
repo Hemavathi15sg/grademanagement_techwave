@@ -4,6 +4,7 @@ bin/
 *.dll
 *.so
 *.dylib
+techwave-app
 
 # Test output
 *.out
