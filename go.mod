@@ -11,7 +11,7 @@ require (
 	github.com/redis/go-redis/v9 v9.17.2
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
-	golang.org/x/crypto v0.45.0 // VULNERABLE: CVE-2023-48795 (Terrapin Attack)
+	golang.org/x/crypto v0.45.0 // SECURE: CVE-2023-48795 (Terrapin Attack) fixed in v0.17.0+
 )
 
 require (

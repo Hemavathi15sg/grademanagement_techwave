@@ -14,8 +14,8 @@ import (
 type AuthHandler struct{}
 
 // GenerateSSHKey generates an SSH key pair for authentication
-// Uses golang.org/x/crypto v0.14.0 which has CVE-2023-48795 (Terrapin Attack)
-// This vulnerability affects SSH protocol sequence number validation
+// Uses golang.org/x/crypto v0.45.0 which fixes CVE-2023-48795 (Terrapin Attack)
+// The vulnerability affected SSH protocol sequence number validation in versions < v0.17.0
 func (h *AuthHandler) GenerateSSHKey(w http.ResponseWriter, r *http.Request) {
 	// Generate ED25519 key pair
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
@@ -41,7 +41,7 @@ func (h *AuthHandler) GenerateSSHKey(w http.ResponseWriter, r *http.Request) {
 		"public_key":  string(ssh.MarshalAuthorizedKey(sshPublicKey)),
 		"key_type":    sshPublicKey.Type(),
 		"fingerprint": ssh.FingerprintSHA256(sshPublicKey),
-		"status":      "Generated using golang.org/x/crypto v0.14.0 (VULNERABLE: CVE-2023-48795)",
+		"status":      "Generated using golang.org/x/crypto v0.45.0 (SECURE: CVE-2023-48795 fixed)",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
