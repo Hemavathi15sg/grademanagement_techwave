@@ -2,7 +2,7 @@ module techwave
 
 go 1.23.0
 
-require github.com/gorilla/mux v1.8.0
+require github.com/gorilla/mux v1.8.1
 
 toolchain go1.24.11
 
