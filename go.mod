@@ -8,7 +8,7 @@ toolchain go1.24.11
 
 require (
 	github.com/cucumber/godog v0.15.1
-	github.com/redis/go-redis/v9 v9.17.2
+	github.com/redis/go-redis/v9 v9.17.3
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.14.0 // VULNERABLE: CVE-2023-48795 (Terrapin Attack)
